@@ -1,59 +1,71 @@
-# 愛豆模擬器 Social Edition
+# 愛豆模擬器 Custom Character Edition
 
-This is a mobile-style idol simulator inspired by the “screen dreaming / idol simulator” layout.
+This version lets the player customise their own idol before playing.
 
-## Included features
+## Custom character options
 
-- Weverse-style fan community
-- KakaoTalk-style private chat
-- Instagram-style feed/story choice
-- Bubble-style fan message app
+- Idol stage name
+- Fan name
+- Age
+- Representative colour
+- Concept/style
+- Idol position
+- Personality
+- Avatar emoji
+
+## Included phone apps
+
+- Weverse
+- KakaoTalk
+- Instagram
+- Bubble / 泡泡
 - Fan letters
-- Schedule app
-- Idol stats system
-- Random events
-- Save/load system
-- Works on iPad through Safari after GitHub Pages publishing
+- Schedule
+- Profile page
 
-## Files
+## Game stats
 
-Upload these files to GitHub:
-
-- `index.html`
-- `style.css`
-- `game.js`
-- `README.md`
+- Fans / fan name
+- Black fans
+- Popularity
+- Energy
+- Singing/dancing skill
+- Love / relationship score
 
 ## Publish on GitHub Pages
 
 1. Create a new GitHub repository.
-2. Upload all project files.
+2. Upload:
+   - `index.html`
+   - `style.css`
+   - `game.js`
+   - `README.md`
 3. Go to **Settings → Pages**.
-4. Source: **Deploy from a branch**.
-5. Branch: **main**.
-6. Folder: **/root**.
-7. Save.
-8. Wait for the GitHub Pages link.
+4. Source: **Deploy from a branch**
+5. Branch: **main**
+6. Folder: **/root**
+7. Save and wait for the live link.
 
-## Where to edit story content
+## Edit the game
 
 Open `game.js`.
 
-Main app choices are here:
+Character defaults are in:
 
 ```js
-const apps = { ... }
-const appEffects = { ... }
+const state = { ... }
 ```
 
-Normal action events are here:
+Colour themes are in:
+
+```js
+const colorThemes = { ... }
+```
+
+Story events are in:
 
 ```js
 const events = { ... }
-```
-
-You can add more story lines by copying the same format:
-
-```js
-["你的劇情文字", { fans: 100, popularity: 3, energy: -5 }]
+const apps = { ... }
+const appEffects = { ... }
 ```
