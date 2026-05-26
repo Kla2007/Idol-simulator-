@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>愛豆模擬器 Social Edition</title>
+  <title>愛豆模擬器 Custom Edition</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -14,25 +14,96 @@
       <p class="date">2026年5月25日 周一</p>
       <div class="notif">生佐：你在宿舍嗎？我在樓下</div>
       <h1>自製愛豆模擬器</h1>
-      <p class="subtitle">Weverse、KakaoTalk、Instagram、泡泡全部加上了。你要練習、營業、私聯，還是偷偷戀愛？</p>
+      <p class="subtitle">先捏人，再開始你的練習生人生。</p>
 
-      <input id="playerNameInput" maxlength="12" placeholder="輸入你的藝名，例如 君渡" />
+      <form id="characterForm" class="creator">
+        <label>
+          藝名
+          <input id="playerNameInput" maxlength="12" placeholder="例如：君渡" />
+        </label>
+
+        <label>
+          粉絲名
+          <input id="fanNameInput" maxlength="12" placeholder="例如：小月亮" />
+        </label>
+
+        <label>
+          年齡
+          <input id="ageInput" type="number" min="14" max="35" value="18" />
+        </label>
+
+        <label>
+          代表色
+          <select id="colorInput">
+            <option value="pink">粉色 Pink</option>
+            <option value="purple">紫色 Purple</option>
+            <option value="blue">藍色 Blue</option>
+            <option value="green">綠色 Green</option>
+            <option value="yellow">黃色 Yellow</option>
+            <option value="red">紅色 Red</option>
+            <option value="black">黑色 Black</option>
+          </select>
+        </label>
+
+        <label>
+          風格
+          <select id="conceptInput">
+            <option value="清純系">清純系</option>
+            <option value="酷颯系">酷颯系</option>
+            <option value="甜妹系">甜妹系</option>
+            <option value="高冷系">高冷系</option>
+            <option value="元氣系">元氣系</option>
+            <option value="神秘系">神秘系</option>
+          </select>
+        </label>
+
+        <label>
+          定位
+          <select id="positionInput">
+            <option value="全能">全能</option>
+            <option value="主唱">主唱</option>
+            <option value="主舞">主舞</option>
+            <option value="rapper">rapper</option>
+            <option value="門面">門面</option>
+            <option value="隊長">隊長</option>
+          </select>
+        </label>
+
+        <label>
+          性格
+          <select id="personalityInput">
+            <option value="外冷內熱">外冷內熱</option>
+            <option value="社恐但有梗">社恐但有梗</option>
+            <option value="野心家">野心家</option>
+            <option value="黏人小狗">黏人小狗</option>
+            <option value="溫柔可靠">溫柔可靠</option>
+            <option value="反骨天才">反骨天才</option>
+          </select>
+        </label>
+
+        <label>
+          頭像 Emoji
+          <input id="avatarInput" maxlength="2" placeholder="🌸" />
+        </label>
+      </form>
+
       <button id="startBtn">開始遊戲</button>
       <button id="randomBtn" class="ghost">隨機開局</button>
     </section>
 
     <section id="gameScreen" class="screen">
       <header class="profile">
-        <div class="avatar">🌸</div>
+        <div class="avatar" id="avatarDisplay">🌸</div>
         <div>
           <h2 id="idolName">君渡</h2>
           <p id="statusLine">第1年 2月上旬 · 18歲 · 練習生</p>
-          <p id="tagLine">清純系 · 全能 · 異性戀 · 永遠</p>
+          <p id="tagLine">清純系 · 全能 · 外冷內熱</p>
+          <p id="fanLine">粉絲名：小月亮 · 代表色：粉色</p>
         </div>
       </header>
 
       <div class="stats">
-        <div><b id="fans">502</b><span>粉絲</span></div>
+        <div><b id="fans">502</b><span id="fanStatLabel">粉絲</span></div>
         <div><b id="blackFans">0</b><span>黑粉</span></div>
         <div><b id="popularity">15</b><span>人氣</span></div>
         <div><b id="energy">80</b><span>體力</span></div>
@@ -82,6 +153,7 @@
       <footer>
         <button id="saveBtn" class="small">存檔</button>
         <button id="loadBtn" class="small">讀檔</button>
+        <button id="editBtn" class="small">改角色</button>
         <button id="resetBtn" class="small danger">重開</button>
       </footer>
     </section>
