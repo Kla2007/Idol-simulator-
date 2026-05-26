@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>愛豆模擬器 Social Edition</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="phone">
+    <section id="startScreen" class="screen active">
+      <div class="top-icons">📶 🔥 🪫</div>
+      <div class="lock-time">18:21</div>
+      <p class="date">2026年5月25日 周一</p>
+      <div class="notif">生佐：你在宿舍嗎？我在樓下</div>
+      <h1>自製愛豆模擬器</h1>
+      <p class="subtitle">Weverse、KakaoTalk、Instagram、泡泡全部加上了。你要練習、營業、私聯，還是偷偷戀愛？</p>
+
+      <input id="playerNameInput" maxlength="12" placeholder="輸入你的藝名，例如 君渡" />
+      <button id="startBtn">開始遊戲</button>
+      <button id="randomBtn" class="ghost">隨機開局</button>
+    </section>
+
+    <section id="gameScreen" class="screen">
+      <header class="profile">
+        <div class="avatar">🌸</div>
+        <div>
+          <h2 id="idolName">君渡</h2>
+          <p id="statusLine">第1年 2月上旬 · 18歲 · 練習生</p>
+          <p id="tagLine">清純系 · 全能 · 異性戀 · 永遠</p>
+        </div>
+      </header>
+
+      <div class="stats">
+        <div><b id="fans">502</b><span>粉絲</span></div>
+        <div><b id="blackFans">0</b><span>黑粉</span></div>
+        <div><b id="popularity">15</b><span>人氣</span></div>
+        <div><b id="energy">80</b><span>體力</span></div>
+      </div>
+
+      <div class="bars">
+        <label>唱跳 <span id="skillVal">20</span></label>
+        <progress id="skillBar" max="100" value="20"></progress>
+        <label>好感 <span id="loveVal">0</span></label>
+        <progress id="loveBar" max="100" value="0"></progress>
+      </div>
+
+      <section class="app-grid">
+        <button data-app="home">👤<span>主頁</span></button>
+        <button data-app="weverse" class="badge" data-count="99+">W<span>Weverse</span></button>
+        <button data-app="kakao" class="badge" data-count="38">K<span>KakaoTalk</span></button>
+        <button data-app="instagram" class="badge" data-count="12">◎<span>Instagram</span></button>
+        <button data-app="bubble" class="badge" data-count="4">🫧<span>泡泡</span></button>
+        <button data-app="call">C<span>打Call</span></button>
+        <button data-app="mail" class="badge" data-count="3">✉️<span>粉絲信</span></button>
+        <button data-app="schedule">📅<span>行程</span></button>
+      </section>
+
+      <section class="panel">
+        <h3 id="eventTitle">今天要做什麼？</h3>
+        <p id="eventText">公司通知你月底會有練習生評級。你要安排一天的行程。</p>
+      </section>
+
+      <section class="actions">
+        <button data-action="practice">⚔️ 練習</button>
+        <button data-action="post">📝 發動態</button>
+        <button data-action="dm">💌 私聯</button>
+        <button data-action="love">💗 戀愛</button>
+        <button data-action="team">👥 團隊</button>
+        <button data-action="senior">⭐ 前輩</button>
+        <button data-action="pet">🐾 寵物</button>
+        <button data-action="cp">💜 CP</button>
+        <button data-action="kitchen">🍴 廚房</button>
+        <button data-action="gym">🏋️ 減肥室</button>
+      </section>
+
+      <section class="logBox">
+        <h3>劇情記錄</h3>
+        <div id="log"></div>
+      </section>
+
+      <footer>
+        <button id="saveBtn" class="small">存檔</button>
+        <button id="loadBtn" class="small">讀檔</button>
+        <button id="resetBtn" class="small danger">重開</button>
+      </footer>
+    </section>
+  </main>
+
+  <div id="modal" class="modal hidden">
+    <div class="modal-card">
+      <button id="closeModal" class="close">×</button>
+      <h2 id="modalTitle">App</h2>
+      <div id="modalBody"></div>
+    </div>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>
