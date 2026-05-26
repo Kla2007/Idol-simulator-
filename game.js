@@ -1,8 +1,16 @@
 const startScreen = document.querySelector("#startScreen");
 const gameScreen = document.querySelector("#gameScreen");
 const playerNameInput = document.querySelector("#playerNameInput");
+const fanNameInput = document.querySelector("#fanNameInput");
+const ageInput = document.querySelector("#ageInput");
+const colorInput = document.querySelector("#colorInput");
+const conceptInput = document.querySelector("#conceptInput");
+const positionInput = document.querySelector("#positionInput");
+const personalityInput = document.querySelector("#personalityInput");
+const avatarInput = document.querySelector("#avatarInput");
 const startBtn = document.querySelector("#startBtn");
 const randomBtn = document.querySelector("#randomBtn");
+const editBtn = document.querySelector("#editBtn");
 const log = document.querySelector("#log");
 
 const modal = document.querySelector("#modal");
@@ -10,8 +18,24 @@ const modalTitle = document.querySelector("#modalTitle");
 const modalBody = document.querySelector("#modalBody");
 const closeModal = document.querySelector("#closeModal");
 
+const colorThemes = {
+  pink: { name: "粉色", theme: "#ff69a6", dark: "#d94a83", light: "#ffd8ea", soft: "#fff7fb" },
+  purple: { name: "紫色", theme: "#9b6bff", dark: "#7447d8", light: "#e3d8ff", soft: "#faf7ff" },
+  blue: { name: "藍色", theme: "#4d9eff", dark: "#2e74c7", light: "#d6eaff", soft: "#f5fbff" },
+  green: { name: "綠色", theme: "#44b883", dark: "#2d8b61", light: "#d4f3e4", soft: "#f4fff9" },
+  yellow: { name: "黃色", theme: "#f4b942", dark: "#c98a16", light: "#fff0bd", soft: "#fffdf3" },
+  red: { name: "紅色", theme: "#f0525f", dark: "#bf3440", light: "#ffd4d8", soft: "#fff7f8" },
+  black: { name: "黑色", theme: "#333333", dark: "#111111", light: "#dddddd", soft: "#f7f7f7" }
+};
+
 const state = {
   name: "君渡",
+  fanName: "小月亮",
+  color: "pink",
+  concept: "清純系",
+  position: "全能",
+  personality: "外冷內熱",
+  avatar: "🌸",
   year: 1,
   month: 2,
   phase: "上旬",
@@ -31,18 +55,19 @@ const apps = {
     title: "主頁",
     html: () => `
       <div class="feed-card">
-        <b>${state.name}</b> <span style="color:#e95a93">練習生</span><br>
-        清純系 · 全能 · 永遠<br>
+        <b>${state.name}</b> <span style="color:${colorThemes[state.color].theme}">${state.career}</span><br>
+        ${state.concept} · ${state.position} · ${state.personality}<br>
+        年齡：${state.age} · 粉絲名：${state.fanName} · 代表色：${colorThemes[state.color].name}<br>
         人氣 ${state.popularity} · 粉絲 ${state.fans.toLocaleString()} · 黑粉 ${state.blackFans.toLocaleString()}
       </div>
-      <div class="feed-card">人氣板：人氣 ${state.popularity}萬 · 黑粉 ${state.blackFans / 10000 >= 1 ? (state.blackFans / 10000).toFixed(1) + "萬" : state.blackFans}</div>
+      <div class="feed-card">人氣板：${state.name} 的 ${state.fanName} 今天也在努力打榜。</div>
     `
   },
   weverse: {
     title: "Weverse",
     html: () => `
-      <div class="feed-card">💬 粉絲：寶寶今天也辛苦了ㅠㅠ</div>
-      <div class="feed-card">💬 粉絲：求自拍，求直播，求出道。</div>
+      <div class="feed-card">💬 ${state.fanName}：${state.name} 今天也辛苦了ㅠㅠ</div>
+      <div class="feed-card">💬 ${state.fanName}：求自拍，求直播，求出道。</div>
       <div class="feed-card">🔥 熱帖：${state.name} 的直拍表情管理是不是進步了？</div>
       <div class="choice-row">
         <button onclick="appChoice('weverseReply')">回覆粉絲留言</button>
@@ -54,7 +79,7 @@ const apps = {
     title: "KakaoTalk",
     html: () => `
       <div class="chat-bubble them">經紀人：月底評級不要再遲到了。</div>
-      <div class="chat-bubble them">生佐：你在宿舍嗎？我在樓下。</div>
+      <div class="chat-bubble them">生佐：${state.name}，你在宿舍嗎？我在樓下。</div>
       <div class="chat-bubble me">我：等我三分鐘。</div>
       <div class="choice-row">
         <button onclick="appChoice('kakaoManager')">回經紀人</button>
@@ -65,7 +90,7 @@ const apps = {
   instagram: {
     title: "Instagram",
     html: () => `
-      <div class="feed-card">◎ 限時動態草稿：練習室鏡子自拍 + 一句「凌晨也是新的開始」</div>
+      <div class="feed-card">◎ 限時動態草稿：${colorThemes[state.color].name}練習室鏡子自拍 + 一句「凌晨也是新的開始」</div>
       <div class="feed-card">♡ 12,402 likes · 留言區正在猜你是不是要出道了</div>
       <div class="choice-row">
         <button onclick="appChoice('instaPost')">發出去</button>
@@ -76,8 +101,8 @@ const apps = {
   bubble: {
     title: "泡泡",
     html: () => `
-      <div class="chat-bubble me">今天練習到很晚，但看到你們留言就充電了。</div>
-      <div class="chat-bubble them">粉絲們：ㅠㅠㅠㅠㅠㅠ</div>
+      <div class="chat-bubble me">今天練習到很晚，但看到${state.fanName}留言就充電了。</div>
+      <div class="chat-bubble them">${state.fanName}：ㅠㅠㅠㅠㅠㅠ</div>
       <div class="choice-row">
         <button onclick="appChoice('bubbleSweet')">發甜甜語音</button>
         <button onclick="appChoice('bubbleHonest')">發真心話長文</button>
@@ -87,7 +112,7 @@ const apps = {
   call: {
     title: "打Call",
     html: () => `
-      <div class="feed-card">粉絲應援任務：今晚 8 點衝新舞台播放量。</div>
+      <div class="feed-card">${state.fanName}應援任務：今晚 8 點衝新舞台播放量。</div>
       <div class="choice-row">
         <button onclick="appChoice('callFans')">組織應援</button>
       </div>
@@ -96,8 +121,8 @@ const apps = {
   mail: {
     title: "粉絲信",
     html: () => `
-      <div class="feed-card">✉️「你不是誰的替代品，你就是你。」</div>
-      <div class="feed-card">✉️「惡評不要看太久，我們會一直在。」</div>
+      <div class="feed-card">✉️「${state.name}，你不是誰的替代品，你就是你。」</div>
+      <div class="feed-card">✉️「惡評不要看太久，${state.fanName}會一直在。」</div>
       <div class="choice-row">
         <button onclick="appChoice('readMail')">慢慢讀完</button>
       </div>
@@ -196,10 +221,26 @@ function applyDelta(delta) {
   state.fans = Math.max(0, state.fans);
 }
 
+function applyTheme() {
+  const theme = colorThemes[state.color] || colorThemes.pink;
+  document.documentElement.style.setProperty("--theme", theme.theme);
+  document.documentElement.style.setProperty("--theme-dark", theme.dark);
+  document.documentElement.style.setProperty("--theme-light", theme.light);
+  document.documentElement.style.setProperty("--theme-soft", theme.soft);
+}
+
 function updateUI() {
+  applyTheme();
+
   document.querySelector("#idolName").textContent = state.name;
+  document.querySelector("#avatarDisplay").textContent = state.avatar || "🌸";
   document.querySelector("#statusLine").textContent =
     `第${state.year}年 ${state.month}月${state.phase} · ${state.age}歲 · ${state.career}`;
+  document.querySelector("#tagLine").textContent =
+    `${state.concept} · ${state.position} · ${state.personality}`;
+  document.querySelector("#fanLine").textContent =
+    `粉絲名：${state.fanName} · 代表色：${colorThemes[state.color].name}`;
+  document.querySelector("#fanStatLabel").textContent = state.fanName;
   document.querySelector("#fans").textContent = state.fans.toLocaleString();
   document.querySelector("#blackFans").textContent = state.blackFans.toLocaleString();
   document.querySelector("#popularity").textContent = state.popularity;
@@ -215,7 +256,7 @@ function updateUI() {
   }
   if (state.fans >= 10000 && state.career !== "solo愛豆") {
     state.career = "solo愛豆";
-    addLog("👑 你粉絲破萬，正式成為solo愛豆。");
+    addLog(`👑 ${state.name} 的 ${state.fanName} 破萬，正式成為solo愛豆。`);
   }
 }
 
@@ -238,6 +279,28 @@ function nextTime() {
   }
 }
 
+function getCharacterFromForm() {
+  state.name = playerNameInput.value.trim() || "君渡";
+  state.fanName = fanNameInput.value.trim() || "小月亮";
+  state.age = clamp(Number(ageInput.value) || 18, 14, 35);
+  state.color = colorInput.value || "pink";
+  state.concept = conceptInput.value || "清純系";
+  state.position = positionInput.value || "全能";
+  state.personality = personalityInput.value || "外冷內熱";
+  state.avatar = avatarInput.value.trim() || "🌸";
+}
+
+function fillFormFromState() {
+  playerNameInput.value = state.name;
+  fanNameInput.value = state.fanName;
+  ageInput.value = state.age;
+  colorInput.value = state.color;
+  conceptInput.value = state.concept;
+  positionInput.value = state.position;
+  personalityInput.value = state.personality;
+  avatarInput.value = state.avatar;
+}
+
 function play(action) {
   const pool = events[action];
   const [text, delta] = pool[Math.floor(Math.random() * pool.length)];
@@ -248,8 +311,8 @@ function play(action) {
   }
 
   document.querySelector("#eventTitle").textContent = "事件發生";
-  document.querySelector("#eventText").textContent = text;
-  addLog(text);
+  document.querySelector("#eventText").textContent = text.replaceAll("你", state.name);
+  addLog(text.replaceAll("你", state.name));
   nextTime();
   updateUI();
 }
@@ -263,9 +326,10 @@ function openApp(appName) {
 function appChoice(choice) {
   const [text, delta] = appEffects[choice];
   applyDelta(delta);
+  const personalisedText = text.replaceAll("你", state.name).replaceAll("粉絲", state.fanName);
   document.querySelector("#eventTitle").textContent = "手機事件";
-  document.querySelector("#eventText").textContent = text;
-  addLog(text);
+  document.querySelector("#eventText").textContent = personalisedText;
+  addLog(personalisedText);
   nextTime();
   updateUI();
   modal.classList.add("hidden");
@@ -273,18 +337,36 @@ function appChoice(choice) {
 
 window.appChoice = appChoice;
 
-function startGame(name) {
-  state.name = name || "君渡";
+function startGame(random = false) {
+  if (random) {
+    const names = ["君渡", "米朵", "夏眠", "林霧", "小椿", "宋梨"];
+    const fanNames = ["小月亮", "渡口", "雲朵", "薄荷糖", "星火", "梨渦"];
+    const avatars = ["🌸", "🦋", "⭐", "🍒", "🐈", "🩵"];
+    const colors = Object.keys(colorThemes);
+
+    playerNameInput.value = names[Math.floor(Math.random() * names.length)];
+    fanNameInput.value = fanNames[Math.floor(Math.random() * fanNames.length)];
+    avatarInput.value = avatars[Math.floor(Math.random() * avatars.length)];
+    colorInput.value = colors[Math.floor(Math.random() * colors.length)];
+    ageInput.value = Math.floor(Math.random() * 8) + 16;
+  }
+
+  getCharacterFromForm();
   startScreen.classList.remove("active");
   gameScreen.classList.add("active");
-  addLog(`🌟 ${state.name} 的愛豆人生開始了。`);
+  addLog(`🌟 ${state.name} 的愛豆人生開始了。${state.fanName} 準備集合。`);
   updateUI();
 }
 
-startBtn.addEventListener("click", () => startGame(playerNameInput.value.trim()));
-randomBtn.addEventListener("click", () => {
-  const names = ["君渡", "米朵", "夏眠", "林霧", "小椿", "宋梨"];
-  startGame(names[Math.floor(Math.random() * names.length)]);
+startBtn.addEventListener("click", () => startGame(false));
+randomBtn.addEventListener("click", () => startGame(true));
+
+editBtn.addEventListener("click", () => {
+  fillFormFromState();
+  gameScreen.classList.remove("active");
+  startScreen.classList.add("active");
+  document.querySelector("h1").textContent = "修改角色設定";
+  document.querySelector(".subtitle").textContent = "改完再按開始遊戲，現有數值會保留。";
 });
 
 document.querySelectorAll("[data-action]").forEach(button => {
@@ -301,12 +383,12 @@ modal.addEventListener("click", (event) => {
 });
 
 document.querySelector("#saveBtn").addEventListener("click", () => {
-  localStorage.setItem("idolSimulatorSaveSocial", JSON.stringify(state));
+  localStorage.setItem("idolSimulatorSaveCustom", JSON.stringify(state));
   addLog("💾 已存檔。");
 });
 
 document.querySelector("#loadBtn").addEventListener("click", () => {
-  const save = localStorage.getItem("idolSimulatorSaveSocial");
+  const save = localStorage.getItem("idolSimulatorSaveCustom");
   if (!save) return addLog("沒有找到存檔。");
   Object.assign(state, JSON.parse(save));
   addLog("📂 已讀取存檔。");
@@ -314,6 +396,11 @@ document.querySelector("#loadBtn").addEventListener("click", () => {
 });
 
 document.querySelector("#resetBtn").addEventListener("click", () => {
-  localStorage.removeItem("idolSimulatorSaveSocial");
+  localStorage.removeItem("idolSimulatorSaveCustom");
   location.reload();
+});
+
+colorInput.addEventListener("change", () => {
+  state.color = colorInput.value;
+  applyTheme();
 });
