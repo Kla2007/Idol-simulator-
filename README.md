@@ -148,3 +148,75 @@ Private contact, public posting, livestreaming, and activities can randomly trig
 - 壓低黑粉聲量
 - 提升品牌好感
 - 提升衣櫥值，讓偶遇文/自拍更容易出圈
+
+
+## Fix: varied Kakao replies
+
+Kakao replies now vary more and detect:
+- why / 為什麼 questions
+- schedule questions
+- comeback info questions
+- short replies like ok / why
+- different tones for manager, staff, crush, member, fan
+
+
+## New update: auto-refresh content after viewing apps
+
+Every time you open most apps, the game can generate new content:
+- 公司: new manager/company notices
+- 熱搜: new black material, encounter posts, or normal trends
+- 泡泡: new fan messages
+- Kakao: new messages from manager/member/crush/staff/fans
+- 粉絲信: new letters
+- 活動: schedule changes
+- 私生: possible new safety incidents
+- 消費: shop/style/gift prompts
+- Weverse/Instagram: new fan posts or fan-made content
+- Stats: now includes a refresh log
+
+This makes the game feel less static after you read/view an app.
+
+
+## New update: missions + opened private DMs + AirDrop
+
+### Missions
+New 任務 app:
+- finish Weverse post missions
+- finish activity missions
+- reply to fan comments
+- new mission sets can refresh
+- mission rewards apply automatically
+
+### Private DMs for 私聯
+私聯 is now an inbox instead of only action buttons:
+- Instagram DMs
+- staff messages
+- 活動後台 messages
+- AirDrop messages
+
+You can open each DM and start an actual conversation.
+Replies are generated based on the DM source and what you type.
+
+### AirDrop
+AirDrop can appear as a risky private-contact route:
+- leaked schedule screenshot
+- backstage photo
+- unknown warning
+- dating/private photos
+
+AirDrop DMs increase scandal/privacy/sasaeng risk more than normal DMs.
+
+
+## New update: app-specific UI skins
+
+Recreated more app-like interfaces for:
+- Instagram: profile header, stats, stories, grid, feed, caption composer
+- Weverse: community banner, artist/fan tabs, artist post cards, fan comments
+- KakaoTalk: yellow/blue chat-room style, contact tabs, quick replies, chat bubbles
+
+The functions still connect to the simulator systems:
+- typing posts
+- related comments
+- replying to fan comments
+- Kakao free typing and generated replies
+- missions and stats
