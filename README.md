@@ -1,71 +1,150 @@
-# 愛豆模擬器 Custom Character Edition
+# 愛豆模擬器 Agency + Activity Edition
 
-This version lets the player customise their own idol before playing.
+Updated according to the requested changes.
 
-## Custom character options
+## Added
 
-- Idol stage name
-- Fan name
-- Age
-- Representative colour
-- Concept/style
-- Idol position
-- Personality
-- Avatar emoji
+### 公司 app
+Includes:
+- manager notices
+- comeback info
+- PR/scandal control
+- comeback meeting
+- demo listening
+- company trust
+- comeback progress
 
-## Included phone apps
+### 熱搜 app
+Like Weibo / Twitter / forum:
+- trends can be normal or controversial
+- clarify / ignore choices
+- private contact and activities can generate new trends
 
-- Weverse
-- KakaoTalk
-- Instagram
-- Bubble / 泡泡
-- Fan letters
-- Schedule
-- Profile page
+### 私聯 app
+Private contact routes:
+- Instagram DM
+- backstage during activities
+- through staff
+- fan letter reply
 
-## Game stats
+These affect love, fans, company trust, and scandal risk.
 
-- Fans / fan name
-- Black fans
-- Popularity
-- Energy
-- Singing/dancing skill
-- Love / relationship score
+### 活動 app
+Tabs inside:
+- concert
+- fan meeting
+- variety show
+- music shows
+- magazine / advert shoot
 
-## Publish on GitHub Pages
+Doing activities earns money and changes fans/popularity/energy.
 
-1. Create a new GitHub repository.
-2. Upload:
-   - `index.html`
-   - `style.css`
-   - `game.js`
-   - `README.md`
-3. Go to **Settings → Pages**.
-4. Source: **Deploy from a branch**
-5. Branch: **main**
-6. Folder: **/root**
-7. Save and wait for the live link.
+### Money system
+New stat:
+- income / money
 
-## Edit the game
+## Removed
 
-Open `game.js`.
+- pet app / pet tab from the phone home screen
 
-Character defaults are in:
+## Still included
 
-```js
-const state = { ... }
-```
+- custom character creation
+- Weverse custom posts
+- Bubble custom messages
+- related fan replies
+- replying to fan comments
+- KakaoTalk custom messaging
+- Instagram posting
+- livestream posting
+- save/load
 
-Colour themes are in:
 
-```js
-const colorThemes = { ... }
-```
+## Extra update: Kakao / Live / Bubble made more like the Douyin reference
 
-Story events are in:
+### KakaoTalk
+- Contact tabs: manager, member, crush, staff, fan.
+- Quick prompt buttons inside each chat.
+- Free typing still works.
+- Replies relate to your message.
+- Manager replies focus on company/comeback/hot search.
+- Crush/staff chats affect love and scandal risk.
 
-```js
-const events = { ... }
-const apps = { ... }
-const appEffects = { ... }
-```
+### Bubble
+- Changed from post-comment format to a real chat-room feel.
+- You send any bubble message.
+- Fans reply in chat bubbles based on your exact topic.
+- The message is also saved into Bubble history.
+
+### Live
+- Start different livestream types:
+  - practice room live
+  - late-night chat
+  - eating live
+  - comeback countdown live
+- You type what you say during the live.
+- Live comments respond to your topic.
+- Viewers increase while live continues.
+- Ending live gives livestream income.
+
+
+## Added: 私生 system
+
+New app:
+- 私生 / safety center
+
+Includes:
+- sasaeng risk
+- privacy safety
+- incidents like airport following, dorm stalking, leaked schedule, phone harassment, hotel floor exposure
+- handling incidents
+- actions:
+  - strengthen security
+  - change route
+  - company statement
+  - legal warning
+
+Private contact, public posting, livestreaming, and activities can randomly trigger sasaeng incidents when risk is high.
+
+
+## New update: 黑料 / 偶遇文 / 花錢系統
+
+### 黑料與掉粉
+- 黑料會透過熱搜爆出，例如：
+  - 霸凌同學
+  - 戀愛曝光
+  - 對staff態度不好
+  - 夜生活/喝酒話題
+- 黑料會直接造成：
+  - 掉粉
+  - 黑粉上升
+  - 品牌好感下降
+  - 緋聞風險上升
+- 你可以在熱搜裡選擇：
+  - 澄清
+  - 道歉
+  - 不回應
+
+### 偶遇文吸粉
+- 活動、發帖、買新衣服後，可能會生成路人偶遇文。
+- 偶遇文會提升：
+  - 粉絲
+  - 人氣
+  - 品牌好感
+
+### 品牌活動限制
+- 如果黑料太多或品牌好感太低，
+  雜誌 / 品牌廣告拍攝會暫停邀約。
+
+### 消費系統
+新增 app：**消費**
+- 買粉絲小禮物
+- 準備高級應援禮盒
+- 買自己的私服
+- 買高奢造型
+
+花錢可以幫你：
+- 寵粉吸粉
+- 壓低黑粉聲量
+- 提升品牌好感
+- 提升衣櫥值，讓偶遇文/自拍更容易出圈
