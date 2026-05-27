@@ -47,6 +47,21 @@ const state = {
   brandFavor: 60,
   wardrobe: 0,
   shoppingHistory: [],
+  appViews: {},
+  lastGenerated: {},
+  refreshLog: [],
+  activeMissionSet: 1,
+  missions: [
+    { id: "m_post_weverse", title: "在 WVS 發一條日常", detail: "完成一條Weverse貼文。", target: 1, progress: 0, done: false, reward: { fans: 120, popularity: 3, money: 300 } },
+    { id: "m_activity", title: "完成一次公開活動", detail: "參加演唱會、fan meeting、綜藝、音樂節目或品牌拍攝。", target: 1, progress: 0, done: false, reward: { fans: 180, popularity: 4, money: 800 } },
+    { id: "m_reply_fans", title: "回覆 2 條粉絲留言", detail: "在WVS/IG/泡泡留言下回覆粉絲。", target: 2, progress: 0, done: false, reward: { fans: 180, blackFans: -10, love: 3 } }
+  ],
+  privateDMs: [
+    { id: "dm_ig_photo", source: "Instagram", name: "匿名攝影師", risk: 8, unread: true, messages: [{ from: "them", text: "我有你後台照片，要不要先看？" }] },
+    { id: "dm_staff", source: "staff", name: "後台staff", risk: 5, unread: true, messages: [{ from: "them", text: "今天下班別走正門，有人蹲。" }] },
+    { id: "dm_airdrop", source: "AirDrop", name: "附近的iPhone", risk: 14, unread: true, messages: [{ from: "them", text: "AirDrop 傳來一張模糊照片：你和某人同框。" }] }
+  ],
+  activePrivateDM: null,
   posts: { weverse: [], instagram: [], bubble: [], live: [] },
   chats: {
     manager: [
@@ -98,6 +113,7 @@ const state = {
 
 const appNames = {
   profile: "主頁",
+  missions: "任務",
   company: "公司",
   weverse: "WVS",
   kakao: "KakaoTalk",
@@ -300,44 +316,679 @@ function generateRelatedComments(text, platform) {
 
 function generateRelatedChatReply(text, chat) {
   const topic = classifyText(text);
-  const replies = {
+  const asksWhy = /(why|點解|為什麼|为什么|為啥|原因|怎麼了|怎么了|幹嘛|干嘛)/i.test(text);
+  const asksSchedule = /(行程|schedule|幾點|几点|時間|时间|明天|today|tomorrow|when)/i.test(text);
+  const asksComeback = /(回歸|comeback|新歌|demo|mv|專輯|专辑|資料|资料|外傳|外传)/i.test(text);
+  const shortReply = /^(ok|okay|k|哦|喔|嗯|why|\?|？)$/i.test(text.trim());
+
+  const special = {
     manager: {
-      practice: ["知道你努力，但不要受傷。", "明天評級我幫你確認時間。"],
-      comeback: ["回歸資料還不能外傳。", "demo已經在走流程，你先管好狀態。"],
-      tired: ["累就早點睡，別再刷手機了。", "明早行程我幫你往後挪半小時。"],
-      drama: ["熱搜先別回，公司會處理。", "截圖給我，我去問公關。"],
-      daily: ["收到。記得看明天行程表。"]
+      why: [
+        "因為回歸資料還在保密期，外傳會被公司追責。",
+        "因為現在熱搜風險高，公司不想再放大話題。",
+        "因為明天行程還沒完全定稿，我只能先提醒你看表。",
+        "因為品牌方最近也在觀察你，說錯一句都可能被截圖。"
+      ],
+      schedule: [
+        "明天早上8:30到公司，10點妝髮，下午音樂節目預錄。",
+        "明天先看行程表，時間有變我會再發你。",
+        "你明天有練習、採訪和一個短拍攝，別睡太晚。",
+        "行程還有一個待確認，確定後我會丟到公司通知。"
+      ],
+      comeback: [
+        "回歸資料現在不能外傳，連隊友群也不要亂發。",
+        "demo已經在走流程，你先把狀態練穩。",
+        "MV概念還在改，正式版出來前不要劇透。",
+        "公司想看你最近數據，再決定part和造型比重。"
+      ],
+      short: [
+        "不要只回ok，真的要看明天行程表。",
+        "你每次都ok然後第二天睡過頭。",
+        "知道你嫌我囉嗦，但這次真的很重要。",
+        "嗯，記得別外傳。"
+      ]
     },
     staff: {
-      practice: ["我幫你留了練習室。", "攝影機那邊我會提醒別拍到你。"],
-      love: ["這種話不要在公開平台說。", "小心點，今天後台有站姐。"],
-      drama: ["先別走正門，我安排車。", "我知道了，公關那邊會處理。"],
-      daily: ["收到，我幫你安排。"]
-    },
-    member: {
-      practice: ["你又偷偷加練？等我一起。", "下次副歌part我們再摳一下。"],
-      food: ["便利店走起，我請你吃拉麵。", "我也餓了，現在去嗎？"],
-      tired: ["別硬撐，我在休息室等你。", "你今天臉色真的不太好。"],
-      love: ["哎呦，突然這麼會講？", "這句我截圖了哈哈哈。"],
-      daily: ["哈哈哈哈你真的很有梗。"]
+      why: [
+        "因為外面有站姐和私生，走錯門很容易被拍。",
+        "因為今天後台人太多，不安全。",
+        "因為你的位置已經有人在論壇猜了。"
+      ],
+      schedule: [
+        "你等我訊息，我會帶你走側門。",
+        "車大概十五分鐘後到，別自己出去。",
+        "下一個點先別公開，到了再發泡泡。"
+      ],
+      short: [
+        "收到，但你別自己亂跑。",
+        "嗯，我盯著門口。",
+        "ok，記得戴口罩。"
+      ]
     },
     crush: {
-      love: ["那我現在可以去見你嗎？", "你這樣說，我真的會當真。"],
-      tired: ["我在樓下，帶了熱飲。", "別哭，我陪你一會兒。"],
-      visual: ["我拍到你素顏了，真的好美。", "不用修圖，你本來就好看。"],
-      drama: ["別怕，我知道你是什麼樣的人。", "需要我的話，我一直在。"],
-      daily: ["我看到了，今天也很想你。"]
+      why: [
+        "因為我想見你，但又怕你被拍到。",
+        "因為你剛剛那句話讓我有點在意。",
+        "因為你一說累，我就想過來。"
+      ],
+      short: [
+        "你就只回我ok？",
+        "好冷淡喔。",
+        "那我先不上去了，怕你不方便。"
+      ]
+    },
+    member: {
+      why: [
+        "因為你看起來快累死了，我才叫你吃飯。",
+        "因為我也不想一個人練到凌晨。",
+        "因為經紀人剛剛又在群裡催行程。"
+      ],
+      short: [
+        "你這個回覆也太敷衍了吧哈哈。",
+        "ok什麼ok，吃不吃一句話。",
+        "懂了，你又累到省字。"
+      ]
     },
     fan: {
-      practice: ["你一定會出道的！我相信你！", "別受傷，慢慢來也可以。"],
-      tired: ["快去睡！我們會等你。", "心疼死了，不准熬夜。"],
-      love: ["啊啊啊啊你說想我們！！", "我今晚不用睡了。"],
-      visual: ["自拍自拍自拍！", "你肯定又漂亮了。"],
-      daily: ["寶寶回我了，人生圓滿。"]
+      why: [
+        "因為我們真的很想你啊ㅠㅠ",
+        "因為泡泡一響就像你真的在旁邊。",
+        "因為你太久沒來，我們會亂想。"
+      ],
+      short: [
+        "寶寶只回ok也很可愛。",
+        "多說一點嘛ㅠㅠ",
+        "收到！今天也喜歡你。"
+      ]
     }
   };
-  return randomFrom((replies[chat] && (replies[chat][topic] || replies[chat].daily)) || ["收到啦。"]);
+
+  if (asksWhy && special[chat]?.why) return randomFrom(special[chat].why);
+  if (asksSchedule && special[chat]?.schedule) return randomFrom(special[chat].schedule);
+  if (asksComeback && special[chat]?.comeback) return randomFrom(special[chat].comeback);
+  if (shortReply && special[chat]?.short) return randomFrom(special[chat].short);
+
+  const replies = {
+    manager: {
+      practice: [
+        "知道你努力，但不要受傷。",
+        "明天評級我幫你確認時間。",
+        "練習可以，但不要再凌晨才回宿舍。",
+        "這段可以留到月評展示，別提前發出去。"
+      ],
+      comeback: [
+        "回歸資料還不能外傳。",
+        "demo已經在走流程，你先管好狀態。",
+        "這個概念還沒定，別在直播提。",
+        "公司會看這週數據再決定曝光量。"
+      ],
+      tired: [
+        "累就早點睡，別再刷手機了。",
+        "明早行程我幫你往後挪半小時。",
+        "你今天先休息，別把狀態拖垮。",
+        "我知道你累，但明天不能遲到。"
+      ],
+      drama: [
+        "熱搜先別回，公司會處理。",
+        "截圖給我，我去問公關。",
+        "先不要發長文，等公司口徑。",
+        "這件事越回越亂，先冷靜。"
+      ],
+      daily: [
+        "收到。記得看明天行程表。",
+        "我知道了，等下把更新版行程發你。",
+        "先不要外傳，尤其是回歸相關。",
+        "嗯，今天早點睡，明天有拍攝。",
+        "可以，但先報備給我。"
+      ]
+    },
+    staff: {
+      practice: [
+        "我幫你留了練習室。",
+        "攝影機那邊我會提醒別拍到你。",
+        "你練完從側門走，外面有人等。"
+      ],
+      love: [
+        "這種話不要在公開平台說。",
+        "小心點，今天後台有站姐。",
+        "我可以幫你傳話，但別留下截圖。"
+      ],
+      drama: [
+        "先別走正門，我安排車。",
+        "我知道了，公關那邊會處理。",
+        "論壇那條我看到了，先別自己回。"
+      ],
+      daily: [
+        "收到，我幫你安排。",
+        "可以，我先問經紀人。",
+        "別急，等我確認一下。"
+      ]
+    },
+    member: {
+      practice: [
+        "你又偷偷加練？等我一起。",
+        "下次副歌part我們再摳一下。",
+        "你今天那段其實比昨天穩很多。"
+      ],
+      food: [
+        "便利店走起，我請你吃拉麵。",
+        "我也餓了，現在去嗎？",
+        "你要辣的還是不辣的？"
+      ],
+      tired: [
+        "別硬撐，我在休息室等你。",
+        "你今天臉色真的不太好。",
+        "你先躺一下，我幫你盯著經紀人。"
+      ],
+      love: [
+        "哎呦，突然這麼會講？",
+        "這句我截圖了哈哈哈。",
+        "你這樣說粉絲會瘋。"
+      ],
+      daily: [
+        "哈哈哈哈你真的很有梗。",
+        "懂了，那我等你。",
+        "你又開始省字了。"
+      ]
+    },
+    crush: {
+      love: [
+        "那我現在可以去見你嗎？",
+        "你這樣說，我真的會當真。",
+        "我也想你，但今天外面有人拍。"
+      ],
+      tired: [
+        "我在樓下，帶了熱飲。",
+        "別哭，我陪你一會兒。",
+        "我不吵你，見一面就走。"
+      ],
+      visual: [
+        "我拍到你素顏了，真的好美。",
+        "不用修圖，你本來就好看。",
+        "今天那件衣服很適合你。"
+      ],
+      drama: [
+        "別怕，我知道你是什麼樣的人。",
+        "需要我的話，我一直在。",
+        "先別回熱搜，會被截圖。"
+      ],
+      daily: [
+        "我看到了，今天也很想你。",
+        "那我晚點再找你。",
+        "你現在方便講電話嗎？"
+      ]
+    },
+    fan: {
+      practice: [
+        "你一定會出道的！我相信你！",
+        "別受傷，慢慢來也可以。",
+        "練習辛苦了，我們都看得到。"
+      ],
+      tired: [
+        "快去睡！我們會等你。",
+        "心疼死了，不准熬夜。",
+        "今天不用營業也可以，休息最重要。"
+      ],
+      love: [
+        "啊啊啊啊你說想我們！！",
+        "我今晚不用睡了。",
+        "這句話我要截圖保存。"
+      ],
+      visual: [
+        "自拍自拍自拍！",
+        "你肯定又漂亮了。",
+        "今天造型一定很好看吧。"
+      ],
+      daily: [
+        "寶寶回我了，人生圓滿。",
+        "今天也等到你了。",
+        "你說什麼我都愛聽。"
+      ]
+    }
+  };
+
+  return randomFrom((replies[chat] && (replies[chat][topic] || replies[chat].daily)) || [
+    "收到啦。",
+    "我知道了。",
+    "等一下再跟你說。",
+    "你這樣說我有點在意。"
+  ]);
 }
+
+
+function updateMission(id, amount = 1) {
+  const mission = state.missions.find(m => m.id === id);
+  if (!mission || mission.done) return;
+  mission.progress = Math.min(mission.target, mission.progress + amount);
+  if (mission.progress >= mission.target) {
+    mission.done = true;
+    addStats(mission.reward || {});
+    toast(`🎯 任務完成：${mission.title}`);
+  }
+}
+
+function missionPercent(mission) {
+  return Math.round((mission.progress / mission.target) * 100);
+}
+
+function newMissionSet() {
+  const pool = [
+    { id: "m_bubble_3_" + Date.now(), title: "發 3 條泡泡", detail: "和粉絲保持聯繫。", target: 3, progress: 0, done: false, reward: { fans: 260, love: 5, money: 500 } },
+    { id: "m_hotsearch_" + Date.now(), title: "處理 1 條熱搜", detail: "在熱搜裡澄清/道歉/回應偶遇文。", target: 1, progress: 0, done: false, reward: { brandFavor: 5, companyTrust: 4, blackFans: -20 } },
+    { id: "m_shop_" + Date.now(), title: "完成 1 次消費", detail: "買粉絲禮物或自己的造型。", target: 1, progress: 0, done: false, reward: { popularity: 3, brandFavor: 3 } },
+    { id: "m_dm_" + Date.now(), title: "回覆 1 個私聯DM", detail: "打開私聯訊息並回覆。", target: 1, progress: 0, done: false, reward: { love: 4, popularity: 2, scandalRisk: 3 } },
+    { id: "m_live_" + Date.now(), title: "完成一次直播", detail: "開直播並結束直播。", target: 1, progress: 0, done: false, reward: { fans: 300, money: 700, popularity: 4 } }
+  ];
+  state.activeMissionSet += 1;
+  state.missions = [];
+  while (state.missions.length < 3) {
+    const picked = randomFrom(pool);
+    if (!state.missions.some(m => m.title === picked.title)) state.missions.push({ ...picked });
+  }
+  saveGame(false);
+  renderMissions();
+  toast("新任務已刷新。");
+}
+window.newMissionSet = newMissionSet;
+
+function renderMissions() {
+  const completeCount = state.missions.filter(m => m.done).length;
+  appContent.innerHTML = `
+    <div class="card">
+      <b>🎯 今日任務 Set ${state.activeMissionSet}</b>
+      <p>完成任務可以拿獎勵。做完一組可以刷新下一組。</p>
+      <p>完成度：${completeCount}/${state.missions.length}</p>
+      <button onclick="newMissionSet()">刷新下一組任務</button>
+    </div>
+    ${state.missions.map(m => `
+      <div class="schedule-item ${m.done ? "mission-done" : ""}">
+        <b>${m.done ? "✅" : "⬜"} ${escapeHTML(m.title)}</b>
+        <p>${escapeHTML(m.detail)}</p>
+        <div class="progress-bar"><div class="progress-fill" style="width:${missionPercent(m)}%"></div></div>
+        <p>${m.progress}/${m.target}</p>
+        <p>獎勵：${Object.entries(m.reward || {}).map(([k,v]) => `${k} ${v > 0 ? "+" : ""}${v}`).join(" · ")}</p>
+      </div>
+    `).join("")}
+  `;
+}
+window.renderMissions = renderMissions;
+
+function addPrivateDM(source = "Instagram", name = "陌生人", text = "你好，可以聊一下嗎？", risk = 6) {
+  const id = "dm_" + Date.now() + "_" + Math.floor(Math.random() * 999);
+  state.privateDMs.unshift({
+    id,
+    source,
+    name,
+    risk,
+    unread: true,
+    messages: [{ from: "them", text }]
+  });
+  state.privateDMs = state.privateDMs.slice(0, 20);
+}
+
+function generatePrivateDM() {
+  const pool = [
+    { source: "Instagram", name: "圈內前輩", text: "看到你今天的舞台了，有空聊聊嗎？", risk: 6 },
+    { source: "Instagram", name: "匿名小號", text: "我知道你和誰在一起，想不想先聽我說？", risk: 16 },
+    { source: "staff", name: "攝影棚staff", text: "今天那張後台合照我可以先發你。", risk: 7 },
+    { source: "活動後台", name: "隔壁團成員", text: "剛剛彩排很帥，下次可以一起練嗎？", risk: 10 },
+    { source: "AirDrop", name: "附近的iPhone", text: "AirDrop收到：一張未公開行程表截圖。", risk: 18 },
+    { source: "AirDrop", name: "Unknown iPhone", text: "AirDrop收到：『別走正門，有人在拍。』", risk: 12 }
+  ];
+  const dm = randomFrom(pool);
+  addPrivateDM(dm.source, dm.name, dm.text, dm.risk);
+  pushRefreshLog("收到新的私聯DM");
+}
+
+function renderPrivateDMList() {
+  const unread = state.privateDMs.filter(d => d.unread).length;
+  appContent.innerHTML = `
+    <div class="card">
+      <b>💌 私聯 DM 收件箱</b>
+      <p>可以透過 Instagram、活動後台、staff，甚至 AirDrop 開始私聯對話。</p>
+      <p>未讀：${unread} · 緋聞風險：${state.scandalRisk} · 私生風險：${state.sasaengRisk}</p>
+      <div class="composer-row">
+        <button onclick="generatePrivateDM(); renderPrivateDMList();">刷新DM</button>
+        <button class="ghost" onclick="addAirdropDM()">模擬 AirDrop</button>
+      </div>
+    </div>
+    ${state.privateDMs.map(dm => `
+      <div class="schedule-item dm-contact">
+        <div>
+          <b>${dm.unread ? "🔴" : "⚪"} ${escapeHTML(dm.name)}</b>
+          <p class="dm-source">${escapeHTML(dm.source)} · 風險 ${dm.risk}</p>
+          <p>${escapeHTML(dm.messages[dm.messages.length - 1].text)}</p>
+        </div>
+        <button onclick="openPrivateDM('${dm.id}')">打開</button>
+      </div>
+    `).join("") || `<div class="post">暫時沒有DM。</div>`}
+  `;
+}
+window.renderPrivateDMList = renderPrivateDMList;
+
+function addAirdropDM() {
+  const options = [
+    "AirDrop收到：一張你在後台和某人說話的照片。",
+    "AirDrop收到：未公開行程表截圖。",
+    "AirDrop收到：『你手機號是不是這個？』",
+    "AirDrop收到：一張模糊的約會路透。"
+  ];
+  addPrivateDM("AirDrop", randomFrom(["附近的iPhone", "Unknown iPhone", "匿名設備"]), randomFrom(options), randomFrom([12, 15, 18, 22]));
+  renderPrivateDMList();
+  toast("收到一個 AirDrop 私聯。");
+}
+window.addAirdropDM = addAirdropDM;
+
+function openPrivateDM(id) {
+  const dm = state.privateDMs.find(d => d.id === id);
+  if (!dm) return;
+  dm.unread = false;
+  state.activePrivateDM = id;
+  renderPrivateDMChat(id);
+}
+window.openPrivateDM = openPrivateDM;
+
+function dmReplyFor(text, dm) {
+  const topic = classifyText(text);
+  if (dm.source === "AirDrop") {
+    if (/誰|who|你是誰|你是谁/i.test(text)) return randomFrom(["先別問我是誰，你只要知道有人在拍。", "我只是提醒你，別走正門。", "你不信也可以，等下熱搜見。"]);
+    if (/不要|別|stop|滾|走開/i.test(text)) return randomFrom(["你越緊張越像真的。", "好啊，那我發論壇。", "只是提醒你，別生氣。"]);
+    return randomFrom(["你最好小心一點。", "照片我還有別張。", "有人比我更早知道你的行程。"]);
+  }
+  if (dm.source === "Instagram") {
+    if (topic === "love") return randomFrom(["你這樣說，我會當真。", "那今晚可以見一面嗎？", "我不會截圖，但你要小心。"]);
+    if (topic === "drama") return randomFrom(["熱搜我看到了，你還好嗎？", "需要我幫你說話嗎？", "先別自己回，會被放大。"]);
+    return randomFrom(["剛剛看到你回我了。", "你真的會回私訊啊？", "那我可以繼續找你嗎？"]);
+  }
+  if (dm.source === "staff" || dm.source === "活動後台") {
+    if (topic === "schedule" || /門|車|行程|路線/.test(text)) return randomFrom(["我帶你走側門。", "車在B1，不要走正門。", "我先幫你看一下外面有沒有人。"]);
+    return randomFrom(["收到，我幫你安排。", "這邊可以，但不要被拍。", "你等我消息。"]);
+  }
+  return randomFrom(["收到。", "你這樣說有點危險。", "先別公開講。"]);
+}
+
+function renderPrivateDMChat(id) {
+  const dm = state.privateDMs.find(d => d.id === id);
+  if (!dm) return renderPrivateDMList();
+  appContent.innerHTML = `
+    <div class="card">
+      <button class="ghost" onclick="renderPrivateDMList()">← 回到DM列表</button>
+      <h3>${escapeHTML(dm.name)}</h3>
+      <p>${escapeHTML(dm.source)} · 風險 ${dm.risk}</p>
+      ${dm.source === "AirDrop" ? `<div class="airdrop-card card"><b>AirDrop 私聯</b><p>這類訊息風險高，可能觸發私生/黑料。</p></div>` : ""}
+    </div>
+    <div class="chat-window" id="privateDMWindow">
+      ${dm.messages.map(m => `<div class="bubble ${m.from === "me" ? "me" : "them"}">${escapeHTML(m.text)}</div>`).join("")}
+    </div>
+    <div class="chat-input-bar">
+      <input id="privateDMInput" placeholder="回覆私聯..." />
+      <button onclick="sendPrivateDM('${id}')">➤</button>
+    </div>
+  `;
+  setTimeout(() => {
+    const box = document.querySelector("#privateDMWindow");
+    if (box) box.scrollTop = box.scrollHeight;
+  }, 0);
+}
+window.renderPrivateDMChat = renderPrivateDMChat;
+
+function sendPrivateDM(id) {
+  const dm = state.privateDMs.find(d => d.id === id);
+  const input = document.querySelector("#privateDMInput");
+  if (!dm || !input) return;
+  const text = input.value.trim();
+  if (!text) return toast("先輸入回覆。");
+
+  dm.messages.push({ from: "me", text });
+  dm.messages.push({ from: "them", text: dmReplyFor(text, dm) });
+
+  addStats({
+    love: dm.source === "Instagram" ? 3 : 0,
+    scandalRisk: Math.ceil(dm.risk / 3),
+    sasaengRisk: dm.source === "AirDrop" ? Math.ceil(dm.risk / 2) : 1,
+    privacy: dm.source === "AirDrop" ? -4 : -1,
+    energy: -2
+  });
+
+  if (dm.risk > 14 && Math.random() < 0.55) {
+    createBlackMaterialTrend(`${dm.source} 私聯`);
+  }
+
+  updateMission("m_dm", 1);
+  saveGame(false);
+  updateHomeStats();
+  renderPrivateDMChat(id);
+}
+window.sendPrivateDM = sendPrivateDM;
+
+function nowStamp() {
+  return new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
+
+function pushRefreshLog(text) {
+  state.refreshLog.unshift(`${nowStamp()} · ${text}`);
+  state.refreshLog = state.refreshLog.slice(0, 20);
+}
+
+function makeFanCommentForContext(contextText) {
+  return generateRelatedComments(contextText, "weverse")[0];
+}
+
+function addAutoPost(platform, text, image = "") {
+  if (!state.posts[platform]) state.posts[platform] = [];
+  state.posts[platform].unshift({
+    text,
+    image,
+    likes: makeLikeCount(80),
+    comments: generateRelatedComments(text, platform),
+    time: "新"
+  });
+  state.posts[platform] = state.posts[platform].slice(0, 12);
+}
+
+function generateCompanyUpdate() {
+  const updates = [
+    { title: "經紀人通知", text: "公司更新了明天行程，音樂節目預錄提前半小時。", delta: { companyTrust: 1 } },
+    { title: "回歸情報", text: "新歌demo二輪評估通過，請準備錄音試唱。", delta: { comebackProgress: 5 } },
+    { title: "品牌窗口", text: "有品牌在觀察你的最近輿論，保持低風險會增加邀約機率。", delta: { brandFavor: 1 } },
+    { title: "公關提醒", text: "熱搜區有新的討論，建議先不要自己下場回覆。", delta: { scandalRisk: 1 } }
+  ];
+  const u = randomFrom(updates);
+  state.companyNotices.unshift({ title: u.title, text: u.text, read: false });
+  state.companyNotices = state.companyNotices.slice(0, 10);
+  addStats(u.delta);
+  pushRefreshLog("公司有新通知");
+}
+
+function generateHotsearchUpdate() {
+  const roll = Math.random();
+  if (roll < 0.34) {
+    createBlackMaterialTrend("系統刷新");
+  } else if (roll < 0.72) {
+    createEncounterTrend("路人偶遇刷新");
+  } else {
+    state.trends.unshift({
+      platform: randomFrom(["微博", "X/Twitter", "論壇", "小紅書"]),
+      title: randomFrom([
+        `${state.name} 新飯拍討論度上升`,
+        `${state.name} 練習室片段被剪成安利視頻`,
+        `${state.name} 粉絲名 ${state.fanName} 上小熱搜`,
+        `${state.name} 今日機場穿搭討論`
+      ]),
+      heat: randomFrom(["1.1w", "2.8w", "35k", "5.4w"]),
+      danger: false,
+      kind: "normal",
+      handled: false
+    });
+    addStats({ popularity: 2, fans: 45 });
+  }
+  state.trends = state.trends.slice(0, 14);
+  pushRefreshLog("熱搜刷新了新話題");
+}
+
+function generateBubbleUpdate() {
+  const prompts = [
+    "寶寶今天會來泡泡嗎ㅠㅠ",
+    "剛剛看到你的飯拍了，狀態好好。",
+    "今天也要好好吃飯，不要只喝咖啡。",
+    "熱搜不要看，我們都在。",
+    "想你了，可以發一句話嗎？"
+  ];
+  state.bubbleChat.push({
+    from: "them",
+    name: randomFrom([state.fanName, "晚睡粉", "續費成功", "前排粉", "泡泡蹲守"]),
+    text: randomFrom(prompts)
+  });
+  state.bubbleChat = state.bubbleChat.slice(-60);
+  pushRefreshLog("泡泡收到粉絲新訊息");
+}
+
+function generateKakaoUpdate() {
+  const chatKeys = ["manager", "member", "crush", "staff", "fan"];
+  const key = randomFrom(chatKeys);
+  const messages = {
+    manager: [
+      "我剛更新了公司通知，你看一下。",
+      "熱搜那邊有新話題，先不要自己回。",
+      "品牌那邊問你最近狀態，這幾天穩一點。",
+      "明天行程可能提前，別太晚睡。"
+    ],
+    member: [
+      "我看到新飯拍了，你今天好出圈。",
+      "等下練習室見？",
+      "你有看到群裡新通知嗎？",
+      "經紀人又開始催了哈哈。"
+    ],
+    crush: [
+      "剛剛看到有人拍你，注意一點。",
+      "今天累嗎？",
+      "想見你，但我怕被拍。",
+      "你是不是又沒吃飯？"
+    ],
+    staff: [
+      "今天外面人多，等下走側門。",
+      "車已經到了，別自己出來。",
+      "論壇有人在猜你行程，我會處理。",
+      "後台通道我幫你確認好了。"
+    ],
+    fan: [
+      "寶寶今天狀態好好。",
+      "不要被惡評影響，我們在。",
+      "什麼時候來泡泡啊？",
+      "今天也好喜歡你。"
+    ]
+  };
+  if (!state.chats[key]) state.chats[key] = [];
+  state.chats[key].push({ from: "them", text: randomFrom(messages[key]) });
+  state.chats[key] = state.chats[key].slice(-50);
+  pushRefreshLog(`Kakao 有新的 ${key} 訊息`);
+}
+
+function generateMailUpdate() {
+  const letters = [
+    "今天偶遇你的人說你很有禮貌，我真的很替你開心。",
+    "就算有黑料熱搜，我也會先相信你。",
+    "你送的小禮物收到了，真的很用心。",
+    "舞台上的你很亮，不要懷疑自己。",
+    "希望你不要被公司和熱搜壓垮，慢慢來。"
+  ];
+  state.letters.unshift(randomFrom(letters));
+  state.letters = state.letters.slice(0, 12);
+  pushRefreshLog("收到新的粉絲信");
+}
+
+function generateActivityUpdate() {
+  const surprise = randomFrom([
+    "公司臨時加了一個綜藝邀約。",
+    "音樂節目彩排時間更新。",
+    "有品牌詢問你的檔期。",
+    "粉絲見面會新增一個互動環節。"
+  ]);
+  state.activityHistory.unshift(surprise);
+  state.activityHistory = state.activityHistory.slice(0, 12);
+  if (surprise.includes("品牌")) addStats({ brandFavor: 2 });
+  pushRefreshLog("活動行程有新變化");
+}
+
+function generateSasaengUpdate() {
+  if (Math.random() * 100 < state.sasaengRisk + 18) {
+    const incident = randomFrom([
+      { title: "陌生號碼騷擾", text: "有陌生號碼連續打來，疑似資訊外流。", severity: 2, handled: false },
+      { title: "站姐蹲點", text: "staff提醒你公司門口有人長時間蹲守。", severity: 2, handled: false },
+      { title: "行程被猜中", text: "論壇有人猜到你下一個行程地點。", severity: 3, handled: false }
+    ]);
+    state.sasaengIncidents.unshift(incident);
+    addStats({ sasaengRisk: incident.severity * 2, privacy: -incident.severity * 3 });
+    pushRefreshLog("私生中心有新警報");
+  } else {
+    pushRefreshLog("私生中心已刷新，暫無新事件");
+  }
+}
+
+function generateShopUpdate() {
+  const sale = randomFrom([
+    "造型師推薦了新的私服方向。",
+    "粉絲禮物供應商更新了包裝選項。",
+    "高奢造型折扣窗口出現，但還是很貴。",
+    "你最近的穿搭討論度上升，買衣服更容易出偶遇文。"
+  ]);
+  state.shoppingHistory.unshift(`系統提示：${sale}`);
+  state.shoppingHistory = state.shoppingHistory.slice(0, 12);
+  pushRefreshLog("消費商店刷新了提示");
+}
+
+function generateContentForApp(app, force = false) {
+  state.appViews[app] = (state.appViews[app] || 0) + 1;
+  const viewCount = state.appViews[app];
+
+  // Do not flood every single tap unless forced. First view after upload/refresh always creates content.
+  const shouldGenerate = force || viewCount === 1 || Math.random() < 0.75;
+  if (!shouldGenerate) return;
+
+  if (app === "company") generateCompanyUpdate();
+  else if (app === "hotsearch") generateHotsearchUpdate();
+  else if (app === "bubble") generateBubbleUpdate();
+  else if (app === "kakao") generateKakaoUpdate();
+  else if (app === "mail") generateMailUpdate();
+  else if (app === "activities") generateActivityUpdate();
+  else if (app === "sasaeng") generateSasaengUpdate();
+  else if (app === "shop") generateShopUpdate();
+  else if (app === "weverse") {
+    const text = randomFrom([
+      `${state.fanName} 今天在WVS發了新的安利帖。`,
+      `粉絲整理了 ${state.name} 的舞台高光合集。`,
+      `有人在WVS問你什麼時候再來回覆留言。`
+    ]);
+    addAutoPost("weverse", text, "");
+    pushRefreshLog("WVS 刷新了粉絲內容");
+  } else if (app === "instagram") {
+    const text = randomFrom([
+      "新飯拍在IG流傳，評論都在問衣服品牌。",
+      "粉絲標記了你的新story截圖。",
+      "有人整理了你的今日穿搭。"
+    ]);
+    addAutoPost("instagram", text, randomFrom(["📷", "🪞", "🎤"]));
+    pushRefreshLog("Instagram 刷新了新內容");
+  } else if (app === "live") {
+    if (!state.liveActive) {
+      state.liveChat.push({ from: "them", name: randomFrom([state.fanName, "路人粉", "直播蹲守"]), text: "什麼時候開直播啊？" });
+    }
+    pushRefreshLog("直播區有新留言");
+  } else if (app === "profile" || app === "stats") {
+    if (Math.random() < 0.5) createEncounterTrend("主頁訪問");
+    pushRefreshLog("主頁數據刷新");
+  } else if (app === "privateContact") {
+    if (Math.random() < 0.75) generatePrivateDM();
+    if (Math.random() < 0.35) maybePublicBuzz("私聯風聲", "bad");
+    pushRefreshLog("私聯線索刷新");
+  } else if (app === "call") {
+    addStats({ fans: 35, popularity: 1 });
+    pushRefreshLog("打Call數據刷新");
+  }
+
+  state.lastGenerated[app] = Date.now();
+}
+window.generateContentForApp = generateContentForApp;
 
 function showScreen(screen) {
   setupScreen.classList.remove("active");
@@ -398,18 +1049,22 @@ window.editCharacter = editCharacter;
 function openApp(app) {
   currentApp = app;
   appTitle.textContent = appNames[app] || app;
+  generateContentForApp(app);
+  saveGame(false);
+  updateHomeStats();
   renderApp(app);
   showScreen(appScreen);
 }
 
 function renderApp(app) {
   if (app === "profile") return renderProfile();
+  if (app === "missions") return renderMissions();
   if (app === "company") return renderCompany();
-  if (app === "weverse") return renderPostApp("weverse", "分享你的日常...", "發布動態", "今天練習到凌晨，但想到你們就有力氣了。");
+  if (app === "weverse") return renderWeverseUI();
   if (app === "bubble") return renderBubbleChat();
-  if (app === "instagram") return renderPostApp("instagram", "◎ 發布 Instagram", "發布", "凌晨練習室。");
+  if (app === "instagram") return renderInstagramUI();
   if (app === "live") return renderLiveRoom();
-  if (app === "kakao") return renderKakaoEnhanced();
+  if (app === "kakao") return renderKakaoTalkUI();
   if (app === "privateContact") return renderPrivateContact();
   if (app === "sasaeng") return renderSasaeng();
   if (app === "hotsearch") return renderHotsearch();
@@ -650,6 +1305,7 @@ function sendBubble() {
   state.bubbleChat.push(...replies);
   addStats(textScore(text));
   addStats({ fans: replies.length * 18, energy: -2 });
+  updateMission("m_bubble_3", 1);
   state.posts.bubble.unshift({
     text,
     image: "",
@@ -760,6 +1416,7 @@ function endLive() {
     time: "剛剛"
   });
   addStats({ energy: -4, money: Math.floor(state.liveViewers * 0.03) });
+  updateMission("m_live", 1);
   saveGame(false);
   updateHomeStats();
   renderLiveRoom();
@@ -802,6 +1459,218 @@ function renderKakaoEnhanced() {
       <button onclick="sendChat()">➤</button>
     </div>
   `;
+  setTimeout(() => {
+    const chatWindow = document.querySelector("#chatWindow");
+    if (chatWindow) chatWindow.scrollTop = chatWindow.scrollHeight;
+  }, 0);
+}
+
+
+function renderInstagramUI() {
+  const postCount = state.posts.instagram.length;
+  const tiles = state.posts.instagram.slice(0, 12).map(post => `
+    <div class="ig-tile">
+      <span>${post.image || "📷"}</span>
+      <p>${escapeHTML(post.text).slice(0, 34)}</p>
+    </div>
+  `).join("");
+
+  const feed = state.posts.instagram.slice(0, 5).map((post, postIndex) => `
+    <article class="ig-post">
+      <div class="ig-post-head">
+        <div class="ig-mini-avatar">${escapeHTML(state.avatar)}</div>
+        <span>${escapeHTML(state.name)}</span>
+        <span style="margin-left:auto;">•••</span>
+      </div>
+      <div class="ig-post-image">${post.image || "📷"}</div>
+      <div class="ig-post-actions"><span>♡</span><span>💬</span><span>↗</span><span style="margin-left:auto;">▱</span></div>
+      <b>${post.likes} likes</b>
+      <p><b>${escapeHTML(state.name)}</b> ${escapeHTML(post.text)}</p>
+      ${post.comments.slice(0, 2).map((c, commentIndex) => `
+        <div class="comment">
+          <b>${escapeHTML(c.name)}</b> ${escapeHTML(c.text)}
+          ${c.replies.map(r => `<div class="reply"><b>${escapeHTML(state.name)}：</b>${escapeHTML(r)}</div>`).join("")}
+          <div class="reply-box">
+            <input id="reply-instagram-${postIndex}-${commentIndex}" placeholder="Reply..." />
+            <button onclick="replyToComment('instagram', ${postIndex}, ${commentIndex})">↩</button>
+          </div>
+        </div>`).join("")}
+    </article>
+  `).join("");
+
+  appContent.innerHTML = `
+    <div class="ig-app">
+      <div class="ig-header">
+        <div class="ig-logo">Instagram</div>
+        <div class="ig-icons"><span>♡</span><span>＋</span><span>☰</span></div>
+      </div>
+
+      <section class="ig-profile-row">
+        <div class="ig-avatar">${escapeHTML(state.avatar)}</div>
+        <div class="ig-counts">
+          <div><b>${postCount}</b><span>posts</span></div>
+          <div><b>${state.fans.toLocaleString()}</b><span>followers</span></div>
+          <div><b>${Math.max(8, Math.floor(state.popularity / 2))}</b><span>following</span></div>
+        </div>
+      </section>
+
+      <section class="ig-bio">
+        <b>${escapeHTML(state.name)}</b><br>
+        ${escapeHTML(state.career)} · ${escapeHTML(state.fanName)}<br>
+        Brand favor ${state.brandFavor} · wardrobe ${state.wardrobe}
+      </section>
+
+      <div class="ig-actions">
+        <button>Edit profile</button>
+        <button>Share profile</button>
+        <button>＋</button>
+      </div>
+
+      <div class="ig-story-row">
+        ${["🎤 stage", "🪞 mirror", "🍜 food", "🏢 company", "💌 fans"].map(s => {
+          const [emoji, label] = s.split(" ");
+          return `<div class="ig-story"><div class="ig-story-circle">${emoji}</div>${label}</div>`;
+        }).join("")}
+      </div>
+
+      <div class="ig-composer">
+        <b>New post</b>
+        <select id="imageSelect">
+          <option value="📷">Photo</option>
+          <option value="🪞">Mirror selfie</option>
+          <option value="🍜">Food</option>
+          <option value="🎤">Stage</option>
+          <option value="🏢">Company</option>
+        </select>
+        <textarea id="instagramText" placeholder="Write a caption..."></textarea>
+        <div class="composer-row">
+          <button onclick="publishPost('instagram')">Share</button>
+          <button class="ghost" onclick="insertPrompt('instagramText', '오늘도 연습실. 凌晨練習室。')">Prompt</button>
+        </div>
+      </div>
+
+      <div class="ig-tabs"><div class="active">▦</div><div>▶</div><div>👤</div></div>
+      <div class="ig-grid">${tiles || `<div class="ig-tile"><span>＋</span><p>first post</p></div>`}</div>
+
+      ${feed}
+    </div>
+  `;
+}
+
+function renderWeverseUI() {
+  const posts = state.posts.weverse.map((post, postIndex) => `
+    <article class="wv-card">
+      <div class="wv-card-head">
+        <div class="wv-avatar">${escapeHTML(state.avatar)}</div>
+        <div>
+          ${escapeHTML(state.name)}
+          <div class="wv-meta">Artist · ${post.time}</div>
+        </div>
+      </div>
+      <p>${escapeHTML(post.text)}</p>
+      ${post.image ? `<div class="post-image">${post.image}</div>` : ""}
+      <div class="wv-reactions"><span>💜 ${post.likes}</span><span>💬 ${post.comments.length}</span><span>↗ Share</span></div>
+      ${post.comments.map((c, commentIndex) => `
+        <div class="wv-comment">
+          <b>${escapeHTML(c.name)}</b><br>${escapeHTML(c.text)}
+          ${c.replies.map(r => `<div class="reply"><b>${escapeHTML(state.name)} 回覆：</b>${escapeHTML(r)}</div>`).join("")}
+          <div class="reply-box">
+            <input id="reply-weverse-${postIndex}-${commentIndex}" placeholder="回覆粉絲..." />
+            <button onclick="replyToComment('weverse', ${postIndex}, ${commentIndex})">↩</button>
+          </div>
+        </div>`).join("")}
+    </article>
+  `).join("");
+
+  appContent.innerHTML = `
+    <div class="wv-app">
+      <div class="wv-header">
+        <div class="wv-logo">Weverse</div>
+        <div>🔔 ⚙️</div>
+      </div>
+      <section class="wv-banner">
+        <h3>${escapeHTML(state.name)} Community</h3>
+        <p>${escapeHTML(state.fanName)} with ${state.name} · comeback ${state.comebackProgress}%</p>
+      </section>
+
+      <div class="wv-tabs">
+        <button class="wv-tab active">Artist</button>
+        <button class="wv-tab">Fan</button>
+        <button class="wv-tab">Media</button>
+        <button class="wv-tab">LIVE</button>
+        <button class="wv-tab">Notice</button>
+      </div>
+
+      <section class="wv-composer">
+        <div class="profile-avatar-small">${escapeHTML(state.avatar)}</div>
+        <div>
+          <textarea id="weverseText" placeholder="分享你的日常..."></textarea>
+          <div class="composer-row">
+            <button onclick="publishPost('weverse')">Post</button>
+            <button class="ghost" onclick="insertPrompt('weverseText', '今天也在練習，想到你們就有力氣。')">填一句</button>
+          </div>
+        </div>
+      </section>
+
+      ${posts || `<div class="wv-card">還沒有內容。發第一條Artist post吧。</div>`}
+    </div>
+  `;
+}
+
+function renderKakaoTalkUI() {
+  const contacts = { manager: "經紀人", member: "隊友", crush: "生佐", staff: "staff", fan: state.fanName };
+  const quickPrompts = {
+    manager: ["回歸資料發我一下", "明天行程幾點", "熱搜要回應嗎"],
+    member: ["下班吃拉麵嗎", "今天舞台一起練嗎", "你看到評論了嗎"],
+    crush: ["你還在樓下嗎", "今天有點想你", "不要被拍到"],
+    staff: ["幫我避開正門", "後台可以見一下嗎", "公關那邊怎麼說"],
+    fan: ["今天也謝謝你", "不要熬夜等我", "想你們了"]
+  };
+
+  appContent.innerHTML = `
+    <div class="kt-app">
+      <div class="kt-top">
+        <div class="kt-title-row">
+          <div class="kt-avatar">${escapeHTML(currentChat === "manager" ? "💼" : currentChat === "staff" ? "🎧" : currentChat === "crush" ? "🌙" : currentChat === "fan" ? "💛" : state.avatar)}</div>
+          <div>
+            <h3>${escapeHTML(contacts[currentChat])}</h3>
+            <small>${currentChat === "manager" ? "company account" : "online"}</small>
+          </div>
+        </div>
+        <div class="kt-icons"><span>🔍</span><span>☰</span></div>
+      </div>
+
+      <div class="kt-tabs">
+        ${Object.entries(contacts).map(([key, name]) => `<button class="kt-tab ${currentChat === key ? "active" : ""}" onclick="switchChat('${key}')">${escapeHTML(name)}</button>`).join("")}
+      </div>
+
+      <div class="card" style="margin: 12px 14px; border-radius: 18px;">
+        <b>Quick reply</b>
+        <div class="composer-row">
+          ${quickPrompts[currentChat].map(p => `<button class="ghost" onclick="insertPrompt('chatInput', '${escapeHTML(p)}')">${escapeHTML(p)}</button>`).join("")}
+        </div>
+      </div>
+
+      <div class="kt-window" id="chatWindow">
+        <div class="kt-date">Today</div>
+        ${state.chats[currentChat].map(m => `
+          <div class="kt-bubble-row ${m.from === "me" ? "me" : "them"}">
+            ${m.from === "them" ? `<div class="kt-avatar">${escapeHTML(currentChat === "manager" ? "💼" : currentChat === "staff" ? "🎧" : currentChat === "crush" ? "🌙" : currentChat === "fan" ? "💛" : state.avatar)}</div>` : ""}
+            ${m.from === "me" ? `<span class="kt-time">${nowStamp ? nowStamp() : ""}</span>` : ""}
+            <div class="kt-bubble ${m.from === "me" ? "me" : "them"}">${escapeHTML(m.text)}</div>
+            ${m.from === "them" ? `<span class="kt-time">${nowStamp ? nowStamp() : ""}</span>` : ""}
+          </div>
+        `).join("")}
+      </div>
+
+      <div class="kt-input">
+        <span>＋</span>
+        <input id="chatInput" placeholder="Message" />
+        <button onclick="sendChat()">➤</button>
+      </div>
+    </div>
+  `;
+
   setTimeout(() => {
     const chatWindow = document.querySelector("#chatWindow");
     if (chatWindow) chatWindow.scrollTop = chatWindow.scrollHeight;
@@ -882,6 +1751,8 @@ function publishPost(platform) {
   };
 
   state.posts[platform].unshift(post);
+  if (platform === "weverse") updateMission("m_post_weverse", 1);
+  if (platform === "bubble") updateMission("m_bubble_3", 1);
   if (classifyText(text) === "comeback") addStats({ comebackProgress: 4, companyTrust: -1 });
   maybeSasaengIncident(platform === "instagram" ? "Instagram" : platform === "weverse" ? "Weverse" : "公開平台");
   if (platform === 'instagram' || platform === 'weverse') maybePublicBuzz(platform === 'instagram' ? 'Instagram 發文' : 'Weverse 發文', 'mixed');
@@ -897,6 +1768,7 @@ function replyToComment(platform, postIndex, commentIndex) {
   const text = input.value.trim();
   if (!text) return toast("先輸入回覆。");
   state.posts[platform][postIndex].comments[commentIndex].replies.push(text);
+  updateMission("m_reply_fans", 1);
   addStats(textScore(text));
   saveGame(false);
   updateHomeStats();
@@ -933,7 +1805,7 @@ function renderKakao() {
 
 function switchChat(chat) {
   currentChat = chat;
-  renderKakaoEnhanced();
+  renderKakaoTalkUI();
 }
 window.switchChat = switchChat;
 
@@ -953,37 +1825,12 @@ function sendChat() {
 
   saveGame(false);
   updateHomeStats();
-  renderKakaoEnhanced();
+  renderKakaoTalkUI();
 }
 window.sendChat = sendChat;
 
 function renderPrivateContact() {
-  appContent.innerHTML = `
-    <div class="card">
-      <b>💌 私聯方式</b>
-      <p>私聯可以透過 Instagram、活動後台、staff、粉絲信。收益高，但緋聞風險也會升。</p>
-      <div class="schedule-item">
-        <b>Instagram 私訊</b>
-        <p>回覆一條曖昧DM，增加好感和風險。</p>
-        <button onclick="privateContact('instagram')">打開IG私訊</button>
-      </div>
-      <div class="schedule-item">
-        <b>活動後台交換訊息</b>
-        <p>在音樂節目/綜藝後台偷偷見面。</p>
-        <button onclick="privateContact('backstage')">後台見面</button>
-      </div>
-      <div class="schedule-item">
-        <b>透過 staff 傳話</b>
-        <p>比較安全，但會扣公司信任。</p>
-        <button onclick="privateContact('staff')">找staff傳話</button>
-      </div>
-      <div class="schedule-item">
-        <b>粉絲信回覆</b>
-        <p>選中一封信回覆，粉絲黏性上升。</p>
-        <button onclick="privateContact('fanletter')">回覆粉絲信</button>
-      </div>
-    </div>
-  `;
+  renderPrivateDMList();
 }
 
 function privateContact(type) {
@@ -1205,6 +2052,7 @@ function handleTrend(mode, index) {
       toast('你選擇沉默，熱度上升但風險也增加。');
     }
   }
+  updateMission("m_hotsearch", 1);
   updateHomeStats();
   saveGame(false);
   renderHotsearch();
@@ -1264,6 +2112,7 @@ function doActivity(type, index) {
     brandFavor: a.brandOnly ? 4 : 1
   });
   state.activityHistory.unshift(`${a.name}：收入 ₩${a.pay.toLocaleString()}`);
+  updateMission("m_activity", 1);
   if (a.risk >= 6) {
     state.trends.unshift({ platform: randomFrom(["微博", "X/Twitter", "論壇"]), title: `${state.name} ${a.name} 片段引熱議`, heat: randomFrom(["1.9w", "3.4w", "28k"]), danger: true });
   } else {
@@ -1354,6 +2203,7 @@ function buyItem(type) {
     return;
   }
   addStats({ money: -item.cost, ...item.delta });
+  updateMission("m_shop", 1);
   state.shoppingHistory.unshift(`${item.text}（花費 ₩${item.cost.toLocaleString()}）`);
   if (type.includes('clothes')) maybePublicBuzz('偶遇穿搭', 'good');
   saveGame(false);
@@ -1369,6 +2219,7 @@ function renderSave() {
       <b>💾 存檔</b>
       <p>目前會自動存檔，也可以手動存。</p>
       <button onclick="saveGame(true)">手動存檔</button>
+      <button class="wide" onclick="generateContentForApp(currentApp || 'hotsearch', true); saveGame(false); updateHomeStats(); renderApp(currentApp || 'hotsearch'); toast('已刷新當前 app 內容');">刷新當前 app</button>
       <button class="ghost wide" onclick="resetGame()">刪除存檔重開</button>
     </div>`;
 }
@@ -1398,6 +2249,10 @@ function renderStats() {
       <p>衣櫥值：${state.wardrobe}</p>
       <p>私生風險：${state.sasaengRisk}</p>
       <p>隱私安全：${state.privacy}</p>
+    </div>
+    <div class="card">
+      <b>🔄 最近刷新</b>
+      ${state.refreshLog.slice(0, 8).map(x => `<p>· ${escapeHTML(x)}</p>`).join("") || "<p>還沒有刷新記錄。</p>"}
     </div>`;
 }
 
